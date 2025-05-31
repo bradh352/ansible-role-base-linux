@@ -290,6 +290,15 @@
 - name: Perform CIS hardening
   include_tasks: "cis.yml"
 
+- name: "Improve network performance sysctls"
+  copy:
+    src: sysctl_90-netperf.conf
+    dest: /etc/sysctl.d/90-netperf.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: sysctl_reload
+
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
   notify: reboot

@@ -38,6 +38,9 @@
     state: restarted
     use: service
 
+- name: sysctl_reload
+  shell: sysctl -p
+
 - name: update_grub
   command: "{{ 'grub2-mkconfig -o /boot/grub2/grub.cfg' if ansible_os_family == 'RedHat' else 'grub-mkconfig -o /boot/grub/grub.cfg' }}"
 

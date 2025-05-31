@@ -92,6 +92,7 @@
     owner: root
     group: root
     mode: 0600
+  notify: sysctl_reload
 
 - name: "CIS: set default umask in login.defs"
   lineinfile:
