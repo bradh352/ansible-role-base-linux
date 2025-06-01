@@ -299,6 +299,15 @@
     mode: 0600
   notify: sysctl_reload
 
+- name: "Detect network issues faster"
+  copy:
+    src: sysctl_95-keepalive.conf
+    dest: /etc/sysctl.d/95-keepalive.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: sysctl_reload
+
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
   notify: reboot
