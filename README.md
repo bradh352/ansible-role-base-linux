@@ -29,6 +29,9 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
 - `skip_updates` - This role automatically attempts to upgrade all packages to
   their latest versions.  May specify `-e skip_updates=true` on the command line
   to bypass this behavior.
+- `disable_hwe` - By default for ubuntu LTS systems, will install the Hardware
+  Enablement kernel. Set this to `true` to use the kernel that shipped with the
+  release.
 - `ntp_pools` - List of NTP pools. Defaults to
   `["0.us.pool.ntp.org", "1.us.pool.ntp.org", "2.us.pool.ntp.org", "3.us.pool.ntp.org"]`
 - `ntp_peers` - If running multiple internal NTP servers, these can be the ones to
