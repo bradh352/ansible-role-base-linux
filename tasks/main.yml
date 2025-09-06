@@ -9,8 +9,10 @@
 - name: configure hosts for hostname
   lineinfile:
     path: /etc/hosts
-    line: "127.0.1.1 {{ inventory_hostname }} {{ short_host }}"
-    regexp: '^127\.0\.1\.1'
+    line: "{{ ip }} {{ inventory_hostname }} {{ short_host }}"
+    regexp: '^({{ "127.0.1.1" | replace(".", "\.") }}|{{ ip | replace(".", "\.") }}|.*{{ inventory_hostname | replace(".", "\.") }})'
+  vars:
+    ip: "{{ (ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0])) if host_use_default_ip else '127.0.1.1' }}"
   notify: set_hostname
 
 - name: configure hostname
@@ -22,19 +24,6 @@
     group: root
     mode: 0644
   notify: set_hostname
-
-# Move to network config
-# - name: configure network interface
-#   lineinfile:
-#     dest: /etc/sysconfig/network-scripts/ifcfg-{{ ansible_default_ipv4.alias }}
-#     regexp: "{{ item.regexp }}"
-#     line: "{{ item.line }}"
-#     state: "{{ item.state }}"
-#     when: ansible_os_family == 'RedHat'
-#   with_items:
-#     - { regexp: 'DNS1\=*', line: "DNS1=8.8.8.8", state: "present" }
-#     - { regexp: 'DNS2\=*', line: "DNS2=8.8.4.4", state: "present" }
-#     - { regexp: 'DNS3\=*', line: "",             state: "absent" }
 
 - name: Make sure the superuser is created for management.
   user:

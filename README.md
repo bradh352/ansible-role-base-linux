@@ -36,6 +36,13 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   `["0.us.pool.ntp.org", "1.us.pool.ntp.org", "2.us.pool.ntp.org", "3.us.pool.ntp.org"]`
 - `ntp_peers` - If running multiple internal NTP servers, these can be the ones to
   peer with. Default none.
+- `host_use_default_ip` - In the `/etc/hosts` file the hostname of the machine
+  is registered by default using `127.0.1.1` as the address.  This is good for
+  machines where the IP address may change (e.g. DHCP).  However some services
+  may require static addressing and validate the machine's hostname matches a
+  non-local ip address (such as FreeIPA server), when set to `true`, it will use
+  the ip address of the network interface that has a default route.  Default
+  `false`.
 - `grub_password` - This is a hashed password used by Grub for making changes
   via the grub menu.  It must be generated via:
   `grub2-mkpasswd-pbkdf2` (RedHat) or `grub-mkpasswd-pbkdf2` (Debian)
@@ -43,6 +50,7 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   idempotent.  So we cache it here.  Should be updated whenever
   `superuser_password` is updated if using the same password.  Likely this should
   also be stored in the vault even though it is hashed.
+
 
 ## Initial deployment
 
