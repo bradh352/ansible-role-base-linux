@@ -62,7 +62,7 @@
 - name: "Automatic updates: {{ 'yes' if base_autoupdate else 'no' }}"
   dnf:
     name: dnf-automatic
-    state: "{{ 'installed' if base_autoupdate else 'absent' }}"
+    state: "{{ 'installed' if os_autoupdate else 'absent' }}"
 
 - name: "Automatic updates: config"
   copy:
@@ -71,7 +71,7 @@
     mode: 0600
     owner: root
     group: root
-  when: base_autoupdate
+  when: os_autoupdate
 
 - name: "Automatic updates: systemd timer config dir"
   file:
@@ -80,7 +80,7 @@
     mode: 0700
     owner: root
     group: root
-  when: base_autoupdate
+  when: os_autoupdate
 
 - name: "Automatic updates: schedule"
   copy:
@@ -89,11 +89,11 @@
     mode: 0600
     owner: root
     group: root
-  when: base_autoupdate
+  when: os_autoupdate
 
 - name: "Automatic updates: started"
   systemd:
     name: dnf-automatic.timer
     enabled: yes
     state: started
-  when: base_autoupdate
+  when: os_autoupdate

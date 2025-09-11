@@ -235,12 +235,14 @@
     owner: root
     group: root
     mode: 0644
+  when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: make sure exim doesn't start, we don't need the daemon
   service:
     name: "{{ 'exim' if ansible_os_family == 'RedHat' else 'exim4' }}"
     state: stopped
     enabled: no
+  when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: Perform RHEL-specific tasks
   include_tasks: "rhel_tasks.yml"
