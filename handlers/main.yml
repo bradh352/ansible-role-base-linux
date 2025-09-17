@@ -14,6 +14,11 @@
     name: rsyslog
     state: restarted
 
+- name: cpupower_restart
+  service:
+    name: cpupower
+    state: restarted
+
 - name: sshd_restart
   service:
     name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"

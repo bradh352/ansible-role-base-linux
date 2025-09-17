@@ -1,0 +1,8 @@
+---
+- name: Debian CPU Governor
+  include_tasks: cpu_governor_debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: RedHat CPU Governor
+  include_tasks: cpu_governor_redhat.yml
+  when: ansible_os_family == 'RedHat'

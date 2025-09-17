@@ -1,0 +1,19 @@
+---
+- name: "APT: Install power-profiles-daemon"
+  ansible.builtin.apt:
+    name: [ "power-profiles-daemon" ]
+    state: present
+
+- name: "Make sure Power profiles daemon is started"
+  service:
+    name: power-profiles-daemon
+    state: started
+    enabled: true
+
+- name: "Get current profile"
+  shell: powerprofilesctl get
+  register: powerprofile
+
+- name: "Set profile profile"
+  shell: "powerprofilesctl set {{ cpu_governor }}"
+  when: powerprofile.stdout_lines[0] != cpu_governor

@@ -7,3 +7,4 @@ os_autoupdate: false
 ssh_password_auth: false
 disable_hwe: false
 host_use_default_ip: false
+cpu_governor: "performance"

@@ -299,6 +299,10 @@
     mode: 0600
   notify: sysctl_reload
 
+- name: "Set cpu performance governor"
+  include_tasks: "cpu_governor.yml"
+  when: ansible_facts['virtualization_role'] != 'guest'
+
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
   notify: reboot

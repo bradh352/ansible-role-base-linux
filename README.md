@@ -29,6 +29,8 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
 - `skip_updates` - This role automatically attempts to upgrade all packages to
   their latest versions.  May specify `-e skip_updates=true` on the command line
   to bypass this behavior.
+- `cpu_governor` - The CPU governor to use.  Only relevant for physical hosts.
+  Defaults to `performance` if not provided.
 - `disable_hwe` - By default for ubuntu LTS systems, will install the Hardware
   Enablement kernel. Set this to `true` to use the kernel that shipped with the
   release.
