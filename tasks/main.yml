@@ -303,6 +303,20 @@
   include_tasks: "cpu_governor.yml"
   when: ansible_facts['virtualization_role'] != 'guest'
 
+- name: "Configure SysFS Disk Settings at boot"
+  template:
+    src: sysfs.disk.conf.j2
+    dest: /etc/sysfs.d/disk.conf
+    mode: "644"
+    owner: root
+  notify: sysfs_restart
+
+- name: "Ensure SysFS is started at boot"
+  service:
+    name: sysfs
+    enabled: true
+    state: started
+
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
   notify: reboot

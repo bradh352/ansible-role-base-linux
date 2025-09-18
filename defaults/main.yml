@@ -8,3 +8,4 @@ ssh_password_auth: false
 disable_hwe: false
 host_use_default_ip: false
 cpu_governor: "performance"
+lsi_reset_workaround: true

@@ -31,6 +31,10 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   to bypass this behavior.
 - `cpu_governor` - The CPU governor to use.  Only relevant for physical hosts.
   Defaults to `performance` if not provided.
+- `lsi_reset_workaround` - If an LSI controller is found with SATA SSDs attached
+  set the queue depth to `1` (effectively disabling NCQ) to workaround a known
+  disk reset issue.  Default `true`.  Even when true, only sets the queue depth
+  when the specified combination is found.
 - `disable_hwe` - By default for ubuntu LTS systems, will install the Hardware
   Enablement kernel. Set this to `true` to use the kernel that shipped with the
   release.

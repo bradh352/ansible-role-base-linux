@@ -19,6 +19,6 @@
   ansible.builtin.apt:
     name: ["wget", "openssh-client", "chrony", "acpid", "nano", "netcat-openbsd",
            "bzip2", "rsyslog", "tar", "unzip", "fail2ban", "exim4", "ufw", "auditd",
-           "needrestart" ]
+           "needrestart", "sysfsutils" ]
     state: present
 

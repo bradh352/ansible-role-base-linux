@@ -19,6 +19,11 @@
     name: cpupower
     state: restarted
 
+- name: sysfs_restart
+  service:
+    name: sysfs
+    state: restarted
+
 - name: sshd_restart
   service:
     name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"
