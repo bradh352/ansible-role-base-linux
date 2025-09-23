@@ -1,4 +1,18 @@
 ---
+- name: install base build packages for Debian-like systems
+  ansible.builtin.apt:
+    name: ["wget", "openssh-client", "chrony", "acpid", "nano", "netcat-openbsd",
+           "bzip2", "rsyslog", "tar", "unzip", "fail2ban", "exim4", "ufw", "auditd",
+           "needrestart", "sysfsutils" ]
+    state: present
+
+- name: Configure needrestart to not auto-restart services
+  ansible.builtin.lineinfile:
+    path: /etc/needrestart/needrestart.conf
+    regexp: '^#\$nrconf\{restart\}.*'
+    line: "$nrconf{restart} = 'l';"
+    state: present
+
 - name: upgrade all packages to the latest versions
   ansible.builtin.apt:
     name: "*"
@@ -14,11 +28,4 @@
     state: present
     install_recommends: true
   when: ansible_distribution_release in ["noble", "focal", "jammy", "bionic"] and not disable_hwe
-
-- name: install base build packages for Debian-like systems
-  ansible.builtin.apt:
-    name: ["wget", "openssh-client", "chrony", "acpid", "nano", "netcat-openbsd",
-           "bzip2", "rsyslog", "tar", "unzip", "fail2ban", "exim4", "ufw", "auditd",
-           "needrestart", "sysfsutils" ]
-    state: present
 
