@@ -16,5 +16,5 @@
   dnf:
     name: ["wget", "openssh-clients", "chrony", "acpid", "nano", "nc", "bzip2",
            "dnf-utils", "rsyslog", "tar", "unzip", "python3-policycoreutils",
-           "fail2ban", "firewalld", "sysfsutils" ] # "exim" not in RedHat 10?
+           "fail2ban", "firewalld" ] # "exim" not in RedHat 10?
     state: installed

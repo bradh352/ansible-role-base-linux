@@ -49,6 +49,10 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   non-local ip address (such as FreeIPA server), when set to `true`, it will use
   the ip address of the network interface that has a default route.  Default
   `false`.
+- `base_additional_hosts` - Add list of additional hosts to `/etc/hosts`.  This
+  can be used for handling situations where DNS may be offline for critical
+  neighbors. Each item in the list must contain an `ip` and `host` entry.
+  E.g. `[ { "ip": "192.168.1.5", "host": "blue" }, ... ]`
 - `grub_password` - This is a hashed password used by Grub for making changes
   via the grub menu.  It must be generated via:
   `grub2-mkpasswd-pbkdf2` (RedHat) or `grub-mkpasswd-pbkdf2` (Debian)

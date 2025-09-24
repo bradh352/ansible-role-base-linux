@@ -15,6 +15,13 @@
     ip: "{{ (ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0])) if host_use_default_ip else '127.0.1.1' }}"
   notify: set_hostname
 
+- name: configure extra hostnames
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^{{ item.ip | replace(".", "\.") }}.*'
+    line: "{{ item.ip }} {{ item.host }}"
+  with_items: "{{ base_additional_hosts }}"
+
 - name: configure hostname
   template:
     src: hostname.j2
@@ -137,7 +144,7 @@
 - name: Ensure we update the ssh port if it was changed
   set_fact:
     ansible_ssh_port: "{{ ssh_port }}"
-  when: ansible_ssh_port != ssh_port
+  when: ansible_ssh_port != ssh_port and ssh_port != 22
 
 # Rsyslog recommends using imuxsock, so that means we need ForwardToSyslog
 # and we want to otherwise make journald unused as we don't want stuff to persist.
@@ -301,7 +308,7 @@
 
 - name: "Set cpu performance governor"
   include_tasks: "cpu_governor.yml"
-  when: ansible_facts['virtualization_role'] != 'guest'
+  when: ansible_facts['virtualization_role'] != 'guest' and ansible_facts['chassis_vendor'] != 'QEMU'
 
 - name: "Configure SysFS Disk Settings at boot"
   template:
@@ -310,12 +317,14 @@
     mode: "644"
     owner: root
   notify: sysfs_restart
+  when: ansible_os_family == 'Debian'
 
 - name: "Ensure SysFS is started at boot"
   service:
     name: sysfs
     enabled: true
     state: started
+  when: ansible_os_family == 'Debian'
 
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
