@@ -306,6 +306,15 @@
     mode: 0600
   notify: sysctl_reload
 
+- name: "Enable io_uring on RHEL-based systems"
+  copy:
+    src: sysctl_95-io_uring.conf
+    dest: /etc/sysctl.d/sysctl_95-io_uring.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: sysctl_reload
+
 - name: "Set cpu performance governor"
   include_tasks: "cpu_governor.yml"
   when: ansible_facts['virtualization_role'] != 'guest' and ansible_facts['chassis_vendor'] != 'QEMU'

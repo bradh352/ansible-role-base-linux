@@ -12,7 +12,7 @@
 - name: "CIS: RedHat: remove unneeded or insecure software packages"
   dnf:
     name: [ "setroubleshoot", "mcstrans", "telnet-server", "telnet", "rsh-server", "rsh",
-            "ypbind", "ypserv", "tftp", "talk", "talk-server", "vsftpd" ]
+            "ypbind", "ypserv", "tftp", "talk", "talk-server", "vsftpd", "cockpit-ws" ]
     state: absent
   when: ansible_os_family == 'RedHat'
 
