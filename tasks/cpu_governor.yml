@@ -1,8 +1,18 @@
 ---
-- name: Debian CPU Governor
-  include_tasks: cpu_governor_debian.yml
-  when: ansible_os_family == 'Debian'
+- name: Install CPUPower systemd service
+  copy:
+    src: cpupower.service
+    dest: /etc/systemd/system/cpupower.service
+    owner: root
+    mode: "644"
+  register: cpupower
 
-- name: RedHat CPU Governor
-  include_tasks: cpu_governor_redhat.yml
-  when: ansible_os_family == 'RedHat'
+- name: Reload SystemD for CPUPower
+  shell: systemctl daemon-reload
+
+- name: Enable CPUPower Service
+  service:
+    name: cpupower
+    enabled: true
+    state: started
+
