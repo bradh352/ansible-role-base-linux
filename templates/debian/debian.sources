@@ -1,0 +1,5 @@
+Types: deb deb-src
+URIs: {{ mirror_debian|default("http://deb.debian.org/debian") }}
+Suites: {{ ansible_distribution_release }} {{ ansible_distribution_release }}-updates
+Components: main non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg

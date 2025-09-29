@@ -60,7 +60,14 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   idempotent.  So we cache it here.  Should be updated whenever
   `superuser_password` is updated if using the same password.  Likely this should
   also be stored in the vault even though it is hashed.
-
+- `mirror_rocky`: URL prefix for rocky linux mirror.  Optional.
+  E.g. `https://plug-mirror.rcac.purdue.edu/rocky`
+- `mirror_epel`: URL prefix for EPEL mirror.  Optional.  E.g.
+  `https://mirror.nodesdirect.com/epel`
+- `mirror_debian`: URL prefix for Debian Linux mirror.  Optional.
+   E.g. `https://mirror.nodesdirect.com/debian`
+- `mirror_ubuntu`: URL prefix for Ubuntu Linux mirror.  Optional.
+   E.g. `https://mirror.nodesdirect.com/ubuntu`
 
 ## Initial deployment
 

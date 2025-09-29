@@ -1,0 +1,45 @@
+[epel]
+name=Extra Packages for Enterprise Linux $releasever - $basearch
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place its address here.
+{% if mirror_epel is not defined %}
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel${releasever_minor:+-z}-$releasever&arch=$basearch
+{% else %}
+baseurl={{ mirror_epel }}/$releasever${releasever_minor:+z}/Everything/$basearch/
+{% endif %}
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever_major
+gpgcheck=1
+repo_gpgcheck=0
+metadata_expire=24h
+countme=1
+enabled=1
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Debug
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place its address here.
+{% if mirror_epel is not defined %}
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel${releasever_minor:+-z}-debug-$releasever&arch=$basearch
+{% else %}
+baseurl={{ mirror_epel }}/$releasever${releasever_minor:+z}/Everything/$basearch/debug/
+{% endif %}
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever_major
+gpgcheck=1
+repo_gpgcheck=0
+metadata_expire=24h
+enabled=0
+
+[epel-source]
+name=Extra Packages for Enterprise Linux $releasever - $basearch - Source
+# It is much more secure to use the metalink, but if you wish to use a local mirror
+# place its address here.
+{% if mirror_epel is not defined %}
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel${releasever_minor:+-z}-source-$releasever&arch=source
+{% else %}
+baseurl={{ mirror_epel }}/$releasever${releasever_minor:+z}/Everything/source/tree/
+{% endif %}
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-$releasever_major
+gpgcheck=1
+repo_gpgcheck=0
+metadata_expire=24h
+enabled=0

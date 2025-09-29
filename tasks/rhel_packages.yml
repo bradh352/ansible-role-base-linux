@@ -1,8 +1,31 @@
 ---
-- name: ensure EPEL is installed
+- name: Install Rocky Linux repo files
+  template:
+    src: "rocky/{{ item }}.j2"
+    dest: "/etc/yum.repos.d/{{ item }}"
+    owner: root
+    mode: "644"
+  with_items:
+    - "rocky.repo"
+    - "rocky-addons.repo"
+    - "rocky-devel.repo"
+    - "rocky-extras.repo"
+  when: ansible_distribution == "Rocky"
+
+- name: ensure EPEL release is not installed as we use our own repo files
   dnf:
     name: "epel-release"
-    state: installed
+    state: absent
+
+- name: Install EPEL repo files
+  template:
+    src: "epel/{{ item }}.j2"
+    dest: "/etc/yum.repos.d/{{ item }}"
+    owner: root
+    mode: "644"
+  with_items:
+    - "epel.repo"
+    - "epel-testing.repo"
 
 - name: upgrade all packages to the latest versions
   dnf:

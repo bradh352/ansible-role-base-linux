@@ -1,0 +1,21 @@
+## See the sources.list(5) manual page for further settings.
+Types: deb
+{% if mirror_ubuntu is not defined %}
+URIs: http://us.archive.ubuntu.com/ubuntu/
+{% else %}
+URIs: {{ mirror_ubuntu }}
+{% endif %}
+Suites: {{ ansible_distribution_release }} {{ ansible_distribution_release }}-updates {{ ansible_distribution_release }}-backports
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+{# Security repo is a subset, mirrors don't have it #}
+{% if mirror_ubuntu is not defined %}
+## Ubuntu security updates. Aside from URIs and Suites,
+## this should mirror your choices in the previous section.
+Types: deb
+URIs: http://security.ubuntu.com/ubuntu
+Suites: {{ ansible_distribution_release }}-security
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+{% endif %}
