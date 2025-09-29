@@ -27,6 +27,15 @@
     - "epel.repo"
     - "epel-testing.repo"
 
+- name: Install EPEL keys
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/pki/rpm-gpg/{{ item }}"
+    owner: root
+    mode: "644"
+  with_items:
+    - "RPM-GPG-KEY-EPEL-10"
+
 - name: upgrade all packages to the latest versions
   dnf:
     name: "*"
@@ -39,5 +48,5 @@
   dnf:
     name: ["wget", "openssh-clients", "chrony", "acpid", "nano", "nc", "bzip2",
            "dnf-utils", "rsyslog", "tar", "unzip", "python3-policycoreutils",
-           "fail2ban", "firewalld" ] # "exim" not in RedHat 10?
+           "fail2ban", "firewalld", "selinux-policy-epel-targeted" ] # "exim" not in RedHat 10?
     state: installed

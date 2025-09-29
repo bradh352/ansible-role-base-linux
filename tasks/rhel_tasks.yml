@@ -12,6 +12,14 @@
     port: "{{ ssh_port|default(22) }}/tcp"
     state: enabled
 
+- name: "open up NTP if we have peers"
+  firewalld:
+    immediate: yes
+    permanent: yes
+    port: "123/udp"
+    state: enabled
+  when: ntp_peers|default([])|length > 0
+
 - name: "SELinux allow SSHd to use port {{ ssh_port|default(22) }}"
   seport:
     proto: tcp

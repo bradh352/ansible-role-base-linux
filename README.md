@@ -41,7 +41,8 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
 - `ntp_pools` - List of NTP pools. Defaults to
   `["0.us.pool.ntp.org", "1.us.pool.ntp.org", "2.us.pool.ntp.org", "3.us.pool.ntp.org"]`
 - `ntp_peers` - If running multiple internal NTP servers, these can be the ones to
-  peer with. Default none.
+  peer with. Default none.  When setting this configuration it also allows
+  connections from anywhere.
 - `host_use_default_ip` - In the `/etc/hosts` file the hostname of the machine
   is registered by default using `127.0.1.1` as the address.  This is good for
   machines where the IP address may change (e.g. DHCP).  However some services
