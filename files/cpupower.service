@@ -1,0 +1,10 @@
+[Unit]
+Description=CPU Performance Governor
+
+[Service]
+ExecStart=cpupower frequency-set -g performance
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
