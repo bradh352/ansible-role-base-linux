@@ -2,7 +2,7 @@
 Description=CPU Performance Governor
 
 [Service]
-ExecStart=cpupower frequency-set -g performance
+ExecStart=cpupower frequency-set -g {{ cpu_governor }}
 Type=oneshot
 RemainAfterExit=yes
 
