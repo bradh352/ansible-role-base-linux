@@ -89,6 +89,21 @@
   with_items: "{{ superuser_pubkey }}"
   when: superuser_pubkey is defined
 
+- name: "Determine if DNS is working"
+  shell: "ping -c 1 -W 1 {{ fallback_dns_check_host|default('www.google.com') }}"
+  register: dnscheck
+  changed_when: false
+  failed_when: false
+  when: fallback_dns is defined
+
+- name: "Override DNS configuration"
+  copy:
+    dest: /etc/resolv.conf
+    content: "nameserver {{ fallback_dns }}"
+    owner: root
+    mode: "644"
+  when: fallback_dns is defined and "Name or service not known" in dnscheck.stderr
+
 - name: Install packages
   include_tasks: "rhel_packages.yml"
   when: ansible_os_family == 'RedHat'

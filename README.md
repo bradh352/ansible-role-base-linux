@@ -69,6 +69,11 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
    E.g. `https://mirror.nodesdirect.com/debian`
 - `mirror_ubuntu`: URL prefix for Ubuntu Linux mirror.  Optional.
    E.g. `https://mirror.nodesdirect.com/ubuntu`
+- `fallback_dns`: DNS server to use if it is determined DNS is
+   non-operational.  This is usually used for bootstrapping a new environment
+   where the DNS server in the template/config is not set right.
+- `fallback_dns_check_host`: Hostname to check for resolution, if not specified,
+   uses www.google.com.
 
 ## Initial deployment
 
