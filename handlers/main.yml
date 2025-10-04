@@ -58,5 +58,5 @@
   reboot:
     msg: "rebooting now"
     connect_timeout: 10
-    post_reboot_delay: 60
+    post_reboot_delay: 15
   throttle: 1
