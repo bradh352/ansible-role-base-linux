@@ -9,7 +9,7 @@ PermitRootLogin no
 AuthorizedKeysFile .ssh/authorized_keys
 PasswordAuthentication {{ 'yes' if ssh_password_auth else 'no' }}
 PubkeyAuthentication yes
-ChallengeResponseAuthentication no
+ChallengeResponseAuthentication {{ 'yes' if ssh_password_auth else 'no' }}
 GSSAPIAuthentication yes
 GSSAPICleanupCredentials yes
 GSSAPIKeyExchange yes
