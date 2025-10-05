@@ -22,6 +22,10 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
   failures. Required.
 - `smtp_server` - SMTP server to use to send emails through. Required.
 - `ssh_port` - Port to listen for inbound SSH connections. Defaults to 22.
+- `ssh_kbdinteractive_auth` - Whether or not to allow keyboard-interactive auth.
+  More secure than password auth, may be used for things like OIDC/Oauth2 or
+  multifactor authentication.  However if the system is only configured for
+  password authentication this method does facilitate that as well.
 - `ssh_password_auth` - Whether or not to allow password authentication.
   Default `false`.  Recommended to use SSH public keys or GSSAPI.
 - `os_autoupdate` - Whether to allow the OS to perform automatic updates.

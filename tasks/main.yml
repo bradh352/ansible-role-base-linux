@@ -146,14 +146,32 @@
     src: "/usr/share/zoneinfo/{{ timezone }}"
     state: link
 
-- name: install /etc/ssh/sshd_config
-  template:
-    src: sshd_config
-    dest: /etc/ssh/sshd_config
-    owner: root
-    group: root
-    mode: 0600
-    backup: true
+- name: Modify sshd configuration
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "{{ item.key }} {{ item.val }}"
+    regexp: "^#?{{ item.key }} .*"
+  with_items:
+    - { key: "Port",                            val: "{{ ssh_port }}" }
+    - { key: "SyslogFacility",                  val: "AUTHPRIV" }
+    - { key: "LogLevel",                        val: "INFO" }
+    - { key: "PermitRootLogin",                 val: "no" }
+    - { key: "PermitEmptyPasswords",            val: "no" }
+    - { key: "PubkeyAuthentication",            val: "yes" }
+    - { key: "KerberosAuthentication",          val: "no" } # Use GSSAPI instead
+    - { key: "PasswordAuthentication",          val: "{{ 'yes' if ssh_password_auth else 'no' }}" }
+    - { key: "KbdInteractiveAuthentication",    val: "{{ 'yes' if ssh_kbdinteractive_auth else 'no' }}" }
+    - { key: "ChallengeResponseAuthentication", val: "{{ 'yes' if ssh_kbdinteractive_auth else 'no' }}" } # Alias for KbdInteractiveAuthentication
+    - { key: "GSSAPIAuthentication",            val: "yes" }
+    - { key: "GSSAPICleanupCredentials",        val: "no" } # Maybe add a toggle for this.  Not desirable for OIDC auth.
+    - { key: "GSSAPIKeyExchange",               val: "yes" }
+    - { key: "UsePAM",                          val: "yes" }
+    - { key: "X11Forwarding",                   val: "no" }
+    - { key: "Banner",                          val: "/etc/issue" }
+    - { key: "KexAlgorithms",                   val: "sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org" }
+    - { key: "MACs",                            val: "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512" }
+    - { key: "Ciphers",                         val: "aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr
+GSSAPIKexAlgorithms gss-group14-sha1-*" }
   notify: sshd_restart
 
 - name: Ensure we update the ssh port if it was changed
