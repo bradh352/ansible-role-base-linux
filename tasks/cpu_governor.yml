@@ -15,4 +15,6 @@
     name: cpupower
     enabled: true
     state: started
+  # If for some reason the system can't control the cpu performance profiles, ignore.
+  ignore_errors: true
 
