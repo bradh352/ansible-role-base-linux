@@ -5,6 +5,13 @@
     state: started
     enabled: true
 
+- name: "FirewallD: Log Denied"
+  lineinfile:
+    path: /etc/firewalld/firewalld.conf
+    regexp: "^LogDenied=.*"
+    line: "LogDenied=all"
+  notify: firewall_reload
+
 - name: "open up port {{ ssh_port|default(22) }} for SSHd alternative port"
   firewalld:
     immediate: yes
