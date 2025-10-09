@@ -9,6 +9,7 @@
 
 - name: Reload SystemD for CPUPower
   shell: systemctl daemon-reload
+  when: cpupower.changed
 
 - name: Enable CPUPower Service
   service:
