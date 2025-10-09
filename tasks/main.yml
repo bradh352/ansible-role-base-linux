@@ -32,6 +32,20 @@
     mode: 0644
   notify: set_hostname
 
+- name: "Disable cloud-init"
+  block:
+    - name: "Check if /etc/cloud exists"
+      stat:
+        path: /etc/cloud
+      register: cloudinit
+    - name: "Create empty /etc/cloud/cloud-init.disabled"
+      copy:
+        dest: "/etc/cloud/cloud-init.disabled"
+        content: ""
+        owner: root
+        mode: "644"
+      when: cloudinit.stat.exists
+
 - name: Make sure the superuser is created for management.
   user:
     name: "{{ superuser }}"
@@ -82,8 +96,8 @@
     path: "/home/{{ superuser }}/.ssh/authorized_keys"
     state: present
     create: yes
-    owner: infra
-    group: infra
+    owner: "{{ superuser }}"
+    group: "{{ superuser }}"
     mode: 0600
     line: "{{ item }}"
   with_items: "{{ superuser_pubkey }}"
