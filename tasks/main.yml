@@ -332,6 +332,12 @@
     state: started
     enabled: yes
 
+- name: "enable acpid (needed for graceful shutdown/restart)"
+  service:
+    name: acpid
+    state: started
+    enabled: yes
+
 - name: Perform CIS hardening
   include_tasks: "cis.yml"
 
