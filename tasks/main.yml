@@ -394,20 +394,21 @@
   register: reboot_req
   changed_when: (reboot_req.rc == 1)
   failed_when: (reboot_req.rc > 1)
-  when: ansible_os_family == 'RedHat'
+  when: ansible_os_family == 'RedHat' and not skip_updates|default(false)
 
 - name: "Debian: check if server needs rebooting"
   stat: path=/var/run/reboot-required
   notify: reboot
   register: reboot_req
   changed_when: reboot_req.stat.exists
-  when: ansible_os_family == 'Debian'
+  when: ansible_os_family == 'Debian' and not skip_updates|default(false)
 
 - name: "Debian: check if any installed services or sessions may need to be restarted"
   shell: "needrestart -r l -b | grep -e NEEDRESTART-SVC -e NEEDRESTART-SESS"
   register: reboot_req
   failed_when: false
   changed_when: reboot_req.rc == 0
+  when: ansible_os_family == 'Debian' and not skip_updates|default(false)
   notify: reboot
 
 # We want to flush any handlers for the base role before executing any other
