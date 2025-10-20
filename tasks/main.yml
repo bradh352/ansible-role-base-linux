@@ -116,7 +116,7 @@
     content: "nameserver {{ fallback_dns }}"
     owner: root
     mode: "644"
-  when: fallback_dns is defined and "Name or service not known" in dnscheck.stderr
+  when: fallback_dns is defined and ("Name or service not known" in dnscheck.stderr or "Temporary failure in name resolution" in dnscheck.stderr)
 
 - name: Install packages
   include_tasks: "rhel_packages.yml"
