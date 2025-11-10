@@ -41,6 +41,8 @@
     state: latest
     update_cache: true
     cache_valid_time: 3600
+    # Prevents packages from starting/restarting on upgrade
+    policy_rc_d: 101
   ignore_errors: false
   when: not skip_updates|default(false)
 
