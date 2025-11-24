@@ -139,10 +139,10 @@
     enabled: no
   when: (timesyncd_status == 3 or timesyncd_status == 0)
 
-- name: install /etc/chrony.conf
+- name: install chrony.conf
   template:
     src: chrony.conf
-    dest: /etc/chrony.conf
+    dest: "{{ '/etc/chrony.conf' if ansible_os_family == 'RedHat' else '/etc/chrony/chrony.conf' }}"
     owner: root
     group: root
     mode: 0644
