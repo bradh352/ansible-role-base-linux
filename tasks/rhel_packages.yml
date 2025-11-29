@@ -69,7 +69,8 @@
 
 - name: "Force reconnect after package upgrades as python version might have changed"
   meta: reset_connection
-  when: not skip_updates|default(false) and packages_updated.changed
+  # When is not supported on reset_connection.  So it will always reconnect. Fine.
+  #when: not skip_updates|default(false) and packages_updated.changed
 
 - name: install base build packages for RHEL-like systems
   dnf:
