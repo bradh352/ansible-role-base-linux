@@ -3,7 +3,7 @@
 {%   for device in ansible_facts["device_links"]["ids"] %}
 {%     set d = ansible_facts["devices"][device] %}
 {%     if "LSI" in d["host"]|default("") and d["rotational"]|default("1") == 0 and d["removeable"]|default("1") == 0 and d["vendor"] == "ATA" %}
-/sys/block/{{ device }}/device/queue_depth = 1
+block/{{ device }}/device/queue_depth = 1
 {%     endif %}
 {%   endfor %}
 {% endif %}
