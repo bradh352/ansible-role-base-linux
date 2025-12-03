@@ -11,3 +11,4 @@ host_use_default_ip: false
 cpu_governor: "performance"
 lsi_reset_workaround: true
 base_additional_hosts: []
+drop_caches: false

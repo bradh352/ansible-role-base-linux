@@ -388,6 +388,28 @@
     state: started
   when: ansible_os_family == 'Debian'
 
+- name: "Make sure no periodic drop caches is enabled"
+  when: not drop_caches
+  file:
+    path: /etc/cron.hourly/drop-caches
+    state: absent
+
+- name: "Enable period cache dropping"
+  when: drop_caches
+  block:
+    - name: "Copy script to drop caches"
+      copy:
+        src: drop-caches.sh
+        dest: /usr/local/bin/drop-caches.sh
+        owner: root
+        mode: 0755
+    - name: "Run drop caches hourly"
+      file:
+        # NOTE: cannot have '.' in cron.hourly filename
+        path: /etc/cron.hourly/drop-caches
+        src: /usr/local/bin/drop-caches.sh
+        state: link
+
 - name: "RedHat: check if server needs rebooting"
   command: "needs-restarting -r"
   notify: reboot

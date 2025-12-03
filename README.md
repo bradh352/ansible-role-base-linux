@@ -78,6 +78,11 @@ common to all systems, including hardening as per CIS and PCI-DSS standards.
    where the DNS server in the template/config is not set right.
 - `fallback_dns_check_host`: Hostname to check for resolution, if not specified,
    uses www.google.com.
+- `drop_caches`: Boolean. Whether or not to periodically drop caches on the
+   running machine.  This is beneficial in shared VM infrastructure where a
+   machine may "burst" but we know the page cache and buffers are not important
+   to keep around.  This may allow the memory to be released back to the
+   hypervisor for overprovisioning purposes.
 
 ## Initial deployment
 
