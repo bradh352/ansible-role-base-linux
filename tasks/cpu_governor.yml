@@ -1,6 +1,6 @@
 ---
 - name: Install CPUPower systemd service
-  template:
+  ansible.builtin.template:
     src: cpupower.service.j2
     dest: /etc/systemd/system/cpupower.service
     owner: root
@@ -8,14 +8,13 @@
   register: cpupower
 
 - name: Reload SystemD for CPUPower
-  shell: systemctl daemon-reload
+  ansible.builtin.command: systemctl daemon-reload
   when: cpupower.changed
 
 - name: Enable CPUPower Service
-  service:
+  ansible.builtin.service:
     name: cpupower
     enabled: true
     state: started
   # If for some reason the system can't control the cpu performance profiles, ignore.
   ignore_errors: true
-

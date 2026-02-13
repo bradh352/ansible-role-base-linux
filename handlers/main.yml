@@ -1,61 +1,58 @@
 ---
 - name: chrony_restart
-  service:
+  ansible.builtin.service:
     name: chronyd
     state: restarted
 
 - name: journald_restart
-  service:
+  ansible.builtin.service:
     name: systemd-journald
     state: restarted
 
 - name: rsyslog_restart
-  service:
+  ansible.builtin.service:
     name: rsyslog
     state: restarted
 
 - name: cpupower_restart
-  service:
+  ansible.builtin.service:
     name: cpupower
     state: restarted
 
 - name: sysfs_restart
-  service:
+  ansible.builtin.service:
     name: sysfs
     state: restarted
 
 - name: sshd_restart
-  service:
+  ansible.builtin.service:
     name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"
     state: restarted
 
 - name: firewall_reload
-  service:
+  ansible.builtin.service:
     name: firewalld
     state: restarted
 
 - name: set_hostname
-  command: "hostnamectl set-hostname {{ inventory_hostname }}"
-
+  ansible.builtin.command: "hostnamectl set-hostname {{ inventory_hostname }}"
 - name: fail2ban_restart
-  service:
+  ansible.builtin.service:
     name: fail2ban
     state: restarted
 
 - name: auditd_reload
-  service:
+  ansible.builtin.service:
     name: auditd
     state: restarted
     use: service
 
 - name: sysctl_reload
-  shell: sysctl -p
-
+  ansible.builtin.command: sysctl -p
 - name: update_grub
-  command: "{{ 'grub2-mkconfig -o /boot/grub2/grub.cfg' if ansible_os_family == 'RedHat' else 'grub-mkconfig -o /boot/grub/grub.cfg' }}"
-
+  ansible.builtin.command: "{{ 'grub2-mkconfig -o /boot/grub2/grub.cfg' if ansible_os_family == 'RedHat' else 'grub-mkconfig -o /boot/grub/grub.cfg' }}"
 - name: reboot
-  reboot:
+  ansible.builtin.reboot:
     msg: "rebooting now"
     connect_timeout: 10
     post_reboot_delay: 15

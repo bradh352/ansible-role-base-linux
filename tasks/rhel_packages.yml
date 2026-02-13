@@ -1,6 +1,6 @@
 ---
 - name: Install Rocky Linux repo files
-  template:
+  ansible.builtin.template:
     src: "rocky/{{ item }}.j2"
     dest: "/etc/yum.repos.d/{{ item }}"
     owner: root
@@ -13,7 +13,7 @@
   when: ansible_distribution == "Rocky"
 
 - name: Install EPEL repo files
-  template:
+  ansible.builtin.template:
     src: "epel/{{ item }}.j2"
     dest: "/etc/yum.repos.d/{{ item }}"
     owner: root
@@ -23,7 +23,7 @@
     - "epel-testing.repo"
 
 - name: Install EPEL keys
-  copy:
+  ansible.builtin.copy:
     src: "{{ item }}"
     dest: "/etc/pki/rpm-gpg/{{ item }}"
     owner: root
@@ -32,7 +32,7 @@
     - "RPM-GPG-KEY-EPEL-10"
 
 - name: ensure EPEL release is not installed as we use our own repo files
-  dnf:
+  ansible.builtin.dnf:
     name: "epel-release"
     state: absent
   register: epel_removed
@@ -41,7 +41,7 @@
   when: epel_removed.changed
   block:
     - name: Install EPEL repo files
-      template:
+      ansible.builtin.template:
         src: "epel/{{ item }}.j2"
         dest: "/etc/yum.repos.d/{{ item }}"
         owner: root
@@ -50,7 +50,7 @@
         - "epel.repo"
         - "epel-testing.repo"
     - name: Install EPEL keys
-      copy:
+      ansible.builtin.copy:
         src: "{{ item }}"
         dest: "/etc/pki/rpm-gpg/{{ item }}"
         owner: root
@@ -59,7 +59,7 @@
         - "RPM-GPG-KEY-EPEL-10"
 
 - name: upgrade all packages to the latest versions
-  dnf:
+  ansible.builtin.dnf:
     name: "*"
     state: latest
     update_cache: true
@@ -68,13 +68,23 @@
   when: not skip_updates|default(false)
 
 - name: "Force reconnect after package upgrades as python version might have changed"
-  meta: reset_connection
-  # When is not supported on reset_connection.  So it will always reconnect. Fine.
-  #when: not skip_updates|default(false) and packages_updated.changed
-
+  ansible.builtin.meta: reset_connection
 - name: install base build packages for RHEL-like systems
-  dnf:
-    name: ["wget", "openssh-clients", "chrony", "acpid", "nano", "nc", "bzip2",
-           "dnf-utils", "rsyslog", "tar", "unzip", "python3-policycoreutils",
-           "fail2ban", "firewalld", "setools-console" ] # "exim" not in RedHat 10?
+  ansible.builtin.dnf:
+    name: # "exim" not in RedHat 10?
+      - "wget"
+      - "openssh-clients"
+      - "chrony"
+      - "acpid"
+      - "nano"
+      - "nc"
+      - "bzip2"
+      - "dnf-utils"
+      - "rsyslog"
+      - "tar"
+      - "unzip"
+      - "python3-policycoreutils"
+      - "fail2ban"
+      - "firewalld"
+      - "setools-console"
     state: installed

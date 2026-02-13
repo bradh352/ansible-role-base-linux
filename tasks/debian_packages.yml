@@ -1,6 +1,6 @@
 ---
 - name: Install Ubuntu repo files
-  template:
+  ansible.builtin.template:
     src: "ubuntu/{{ item }}.j2"
     dest: "/etc/apt/sources.list.d/{{ item }}"
     owner: root
@@ -10,7 +10,7 @@
   when: ansible_distribution == "Ubuntu"
 
 - name: Install Debian repo files
-  template:
+  ansible.builtin.template:
     src: "debian/{{ item }}.j2"
     dest: "/etc/apt/sources.list.d/{{ item }}"
     owner: root
@@ -23,15 +23,29 @@
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
-    name: ["wget", "openssh-client", "chrony", "acpid", "nano", "netcat-openbsd",
-           "bzip2", "rsyslog", "tar", "unzip", "fail2ban", "exim4", "ufw", "auditd",
-           "needrestart", "sysfsutils" ]
+    name:
+      - "wget"
+      - "openssh-client"
+      - "chrony"
+      - "acpid"
+      - "nano"
+      - "netcat-openbsd"
+      - "bzip2"
+      - "rsyslog"
+      - "tar"
+      - "unzip"
+      - "fail2ban"
+      - "exim4"
+      - "ufw"
+      - "auditd"
+      - "needrestart"
+      - "sysfsutils"
     state: present
 
 - name: Configure needrestart to not auto-restart services
   ansible.builtin.lineinfile:
     path: /etc/needrestart/needrestart.conf
-    regexp: '^#\$nrconf\{restart\}.*'
+    regexp: "^#\\$nrconf\\{restart\\}.*"
     line: "$nrconf{restart} = 'l';"
     state: present
 
@@ -48,8 +62,7 @@
 
 - name: Install HWE updates
   ansible.builtin.apt:
-    name: [ "linux-generic-hwe-{{ ansible_distribution_version }}" ]
+    name: ["linux-generic-hwe-{{ ansible_distribution_version }}"]
     state: present
     install_recommends: true
   when: ansible_distribution_release in ["noble", "focal", "jammy", "bionic"] and not disable_hwe
-

@@ -1,45 +1,44 @@
 ---
-
 # We do this because ansible_inventory isn't quite the right thing to do as that is read from the
 # destination machine, and if it hasn't been configured yet, it won't be right.
 - name: set host names
-  set_fact:
+  ansible.builtin.set_fact:
     short_host: "{{ inventory_hostname.split('.')[0] }}"
 
 - name: configure hosts for hostname
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/hosts
     line: "{{ ip }} {{ inventory_hostname }} {{ short_host }}"
     regexp: '^({{ "127.0.1.1" | replace(".", "\.") }}|{{ ip | replace(".", "\.") }}|.*{{ inventory_hostname | replace(".", "\.") }})'
   vars:
-    ip: "{{ (ansible_default_ipv4.address|default(ansible_all_ipv4_addresses[0])) if host_use_default_ip else '127.0.1.1' }}"
+    ip: "{{ (ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0])) if host_use_default_ip else '127.0.1.1' }}"
   notify: set_hostname
 
 - name: configure extra hostnames
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: '^{{ item.ip | replace(".", "\.") }}.*'
     line: "{{ item.ip }} {{ item.host }}"
   with_items: "{{ base_additional_hosts }}"
 
 - name: configure hostname
-  template:
+  ansible.builtin.template:
     src: hostname.j2
     dest: /etc/hostname
-    backup: yes
+    backup: true
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: set_hostname
 
 - name: "Disable cloud-init"
   block:
     - name: "Check if /etc/cloud exists"
-      stat:
+      ansible.builtin.stat:
         path: /etc/cloud
       register: cloudinit
     - name: "Create empty /etc/cloud/cloud-init.disabled"
-      copy:
+      ansible.builtin.copy:
         dest: "/etc/cloud/cloud-init.disabled"
         content: ""
         owner: root
@@ -47,71 +46,71 @@
       when: cloudinit.stat.exists
 
 - name: Make sure the superuser is created for management.
-  user:
+  ansible.builtin.user:
     name: "{{ superuser }}"
-    create_home: yes
+    create_home: true
     shell: "/bin/bash"
-    groups: "{{ [ 'wheel', 'users', 'adm', 'lp' ] if ansible_os_family == 'RedHat' else [ 'adm', 'sudo', 'plugdev', 'cdrom', 'dip' ] }}"
+    groups: "{{ ['wheel', 'users', 'adm', 'lp'] if ansible_os_family == 'RedHat' else ['adm', 'sudo', 'plugdev', 'cdrom', 'dip'] }}"
     state: present
-    append: yes
+    append: true
     password: "{{ superuser_password | password_hash('sha512') }}"
     update_password: on_create
   register: superuser_created
 
 - name: Fetch the hash for the existing superuser password
-  script: get_pw_hash.sh "{{ superuser }}"
+  ansible.builtin.script: get_pw_hash.sh "{{ superuser }}"
   register: pwhash
   changed_when: false
 
 - name: Make sure the superuser password is up to date
-  user:
+  ansible.builtin.user:
     name: "{{ superuser }}"
     password: "{{ superuser_password | password_hash('sha512', pwhash.stdout | trim) }}"
     update_password: always
   register: superuser_pwchanged
 
 - name: Fixup ansible password for this playbook
-  set_fact:
+  ansible.builtin.set_fact:
     ansible_password: "{{ superuser_password }}"
     ansible_become_pass: "{{ superuser_password }}"
   no_log: true
   when: ansible_user == superuser and (superuser_created.changed or superuser_pwchanged.changed)
 
 - name: disable root user
-  user:
+  ansible.builtin.user:
     name: root
     password: "!"
     update_password: always
 
 - name: "Ensure /home/{{ superuser }}/.ssh exists"
-  file:
+  ansible.builtin.file:
     path: "/home/{{ superuser }}/.ssh/"
     state: directory
-    mode: 0700
+    mode: "0700"
     owner: "{{ superuser }}"
     group: "{{ superuser }}"
 
 - name: "Make sure the public key for ssh authentication is configured for the {{ superuser }} user"
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "/home/{{ superuser }}/.ssh/authorized_keys"
     state: present
-    create: yes
+    create: true
     owner: "{{ superuser }}"
     group: "{{ superuser }}"
-    mode: 0600
+    mode: "0600"
     line: "{{ item }}"
   with_items: "{{ superuser_pubkey }}"
   when: superuser_pubkey is defined
 
 - name: "Determine if DNS is working"
-  shell: "ping -c 1 -W 1 {{ fallback_dns_check_host|default('www.google.com') }}"
+  ansible.builtin.command: "ping -c 1 -W 1 {{ fallback_dns_check_host|default('www.google.com') }}"
   register: dnscheck
   changed_when: false
   failed_when: false
   when: fallback_dns is defined
 
 - name: "Override DNS configuration"
-  copy:
+  ansible.builtin.copy:
     dest: /etc/resolv.conf
     content: "nameserver {{ fallback_dns }}"
     owner: root
@@ -119,43 +118,43 @@
   when: fallback_dns is defined and ("Name or service not known" in dnscheck.stderr or "Temporary failure in name resolution" in dnscheck.stderr)
 
 - name: Install packages
-  include_tasks: "rhel_packages.yml"
+  ansible.builtin.include_tasks: "rhel_packages.yml"
   when: ansible_os_family == 'RedHat'
 
 - name: Debian packages
-  include_tasks: "debian_packages.yml"
+  ansible.builtin.include_tasks: "debian_packages.yml"
   when: ansible_os_family == 'Debian'
 
 - name: check if systemd-timesyncd is installed
-  shell: systemctl status systemd-timesyncd
+  ansible.builtin.command: systemctl status systemd-timesyncd
   register: timesyncd_status
   failed_when: not (timesyncd_status.rc == 4 or timesyncd_status.rc == 3 or timesyncd_status.rc == 0)
-  changed_when: False
+  changed_when: false
 
 - name: disable systemd-timesyncd
-  service:
+  ansible.builtin.service:
     name: systemd-timesyncd
     state: stopped
-    enabled: no
+    enabled: false
   when: (timesyncd_status == 3 or timesyncd_status == 0)
 
 - name: install chrony.conf
-  template:
+  ansible.builtin.template:
     src: chrony.conf
     dest: "{{ '/etc/chrony.conf' if ansible_os_family == 'RedHat' else '/etc/chrony/chrony.conf' }}"
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: chrony_restart
 
 - name: ensure chronyd is started and enabled
-  service:
+  ansible.builtin.service:
     name: chronyd
     state: started
     enabled: true
 
 - name: Set timezone
-  file:
+  ansible.builtin.file:
     path: /etc/localtime
     src: "/usr/share/zoneinfo/{{ timezone }}"
     state: link
@@ -166,30 +165,30 @@
     line: "{{ item.key }} {{ item.val }}"
     regexp: "^#?{{ item.key }} .*"
   with_items:
-    - { key: "Port",                            val: "{{ ssh_port }}" }
-    - { key: "SyslogFacility",                  val: "AUTHPRIV" }
-    - { key: "LogLevel",                        val: "INFO" }
-    - { key: "PermitRootLogin",                 val: "no" }
-    - { key: "PermitEmptyPasswords",            val: "no" }
-    - { key: "PubkeyAuthentication",            val: "yes" }
-    - { key: "KerberosAuthentication",          val: "no" } # Use GSSAPI instead
-    - { key: "PasswordAuthentication",          val: "{{ 'yes' if ssh_password_auth else 'no' }}" }
-    - { key: "KbdInteractiveAuthentication",    val: "{{ 'yes' if ssh_kbdinteractive_auth else 'no' }}" }
+    - { key: "Port", val: "{{ ssh_port }}" }
+    - { key: "SyslogFacility", val: "AUTHPRIV" }
+    - { key: "LogLevel", val: "INFO" }
+    - { key: "PermitRootLogin", val: "no" }
+    - { key: "PermitEmptyPasswords", val: "no" }
+    - { key: "PubkeyAuthentication", val: "yes" }
+    - { key: "KerberosAuthentication", val: "no" } # Use GSSAPI instead
+    - { key: "PasswordAuthentication", val: "{{ 'yes' if ssh_password_auth else 'no' }}" }
+    - { key: "KbdInteractiveAuthentication", val: "{{ 'yes' if ssh_kbdinteractive_auth else 'no' }}" }
     - { key: "ChallengeResponseAuthentication", val: "{{ 'yes' if ssh_kbdinteractive_auth else 'no' }}" } # Alias for KbdInteractiveAuthentication
-    - { key: "GSSAPIAuthentication",            val: "yes" }
-    - { key: "GSSAPICleanupCredentials",        val: "no" } # Maybe add a toggle for this.  Not desirable for OIDC auth.
-    - { key: "GSSAPIKeyExchange",               val: "yes" }
-    - { key: "UsePAM",                          val: "yes" }
-    - { key: "X11Forwarding",                   val: "no" }
-    - { key: "Banner",                          val: "/etc/issue" }
-    - { key: "KexAlgorithms",                   val: "sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org" }
-    - { key: "MACs",                            val: "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512" }
-    - { key: "Ciphers",                         val: "aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr" }
-    - { key: "GSSAPIKexAlgorithms",             val: "gss-group14-sha256-,gss-group16-sha512-,gss-nistp256-sha256-,gss-curve25519-sha256-" }
+    - { key: "GSSAPIAuthentication", val: "yes" }
+    - { key: "GSSAPICleanupCredentials", val: "no" } # Maybe add a toggle for this.  Not desirable for OIDC auth.
+    - { key: "GSSAPIKeyExchange", val: "yes" }
+    - { key: "UsePAM", val: "yes" }
+    - { key: "X11Forwarding", val: "no" }
+    - { key: "Banner", val: "/etc/issue" }
+    - { key: "KexAlgorithms", val: "sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org" }
+    - { key: "MACs", val: "hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512" }
+    - { key: "Ciphers", val: "aes128-gcm@openssh.com,aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr" }
+    - { key: "GSSAPIKexAlgorithms", val: "gss-group14-sha256-,gss-group16-sha512-,gss-nistp256-sha256-,gss-curve25519-sha256-" }
   notify: sshd_restart
 
 - name: Ensure we update the ssh port if it was changed
-  set_fact:
+  ansible.builtin.set_fact:
     ansible_ssh_port: "{{ ssh_port }}"
   when: ansible_ssh_port|default("22") != ssh_port and ssh_port != 22
 
@@ -197,183 +196,182 @@
 # and we want to otherwise make journald unused as we don't want stuff to persist.
 # https://www.rsyslog.com/doc/v8-stable/configuration/modules/imjournal.html
 - name: configure journald settings (/etc/systemd/journald.conf)
-  ini_file:
+  community.general.ini_file:
     dest: /etc/systemd/journald.conf
     section: Journal
     option: "{{ item.key }}"
     value: "{{ item.val }}"
   with_items:
     - { key: "RateLimitIntervalSec", val: "0" }
-    - { key: "RateLimitBurst",       val: "0" }
-    - { key: "RuntimeMaxUse",        val: "100M" }
-    - { key: "Storage",              val: "volatile" }
-    - { key: "ForwardToSyslog",      val: "true" }
-    - { key: "MaxLevelSyslog",       val: "debug" }
-    - { key: "MaxRetentionSec",      val: "2h" }
+    - { key: "RateLimitBurst", val: "0" }
+    - { key: "RuntimeMaxUse", val: "100M" }
+    - { key: "Storage", val: "volatile" }
+    - { key: "ForwardToSyslog", val: "true" }
+    - { key: "MaxLevelSyslog", val: "debug" }
+    - { key: "MaxRetentionSec", val: "2h" }
   notify: journald_restart
 
 - name: install /etc/rsyslog.conf
-  copy:
+  ansible.builtin.copy:
     src: rsyslog.conf
     dest: /etc/rsyslog.conf
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: rsyslog_restart
 
 - name: add compress to /etc/logrotate.conf
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/logrotate.conf
     insertafter: "# uncomment this if you want your log files compressed"
     line: compress
   notify: rsyslog_restart
 
 - name: configure logrotate
-  copy:
+  ansible.builtin.copy:
     src: logrotate_rsyslog
     dest: /etc/logrotate.d/syslog
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: install custom prompt for shell access
-  copy:
+  ansible.builtin.copy:
     src: 99-prompt.sh
     dest: /etc/profile.d/99-prompt.sh
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: Put /usr/local/bin in default path
-  copy:
+  ansible.builtin.copy:
     src: profile_local_paths.sh
     dest: /etc/profile.d/local_paths.sh
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: install idle timeout
-  copy:
+  ansible.builtin.copy:
     src: tout.sh
     dest: /etc/profile.d/tout.sh
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
 
 - name: automatically perform discard/trim operations weekly to free up disk space
-  copy:
+  ansible.builtin.copy:
     src: trim.sh
     dest: /usr/local/bin/trim.sh
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
 
 - name: insert link in /etc/cron.weekly for discard/trim
-  file:
+  ansible.builtin.file:
     src: /usr/local/bin/trim.sh
     dest: /etc/cron.weekly/trim
     state: link
 
 - name: fix MAILTO in /etc/crontab
-  lineinfile:
+  ansible.builtin.lineinfile:
     dest: /etc/crontab
     regexp: MAILTO
     line: "MAILTO={{ admin_email }}"
     backrefs: true
 
 - name: configure exim
-  template:
+  ansible.builtin.template:
     src: exim.conf
     dest: "{{ '/etc/exim/exim.conf' if ansible_os_family == 'RedHat' else '/etc/exim4/exim4.conf' }}"
-    backup: yes
+    backup: true
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: make sure exim doesn't start, we don't need the daemon
-  service:
+  ansible.builtin.service:
     name: "{{ 'exim' if ansible_os_family == 'RedHat' else 'exim4' }}"
     state: stopped
-    enabled: no
+    enabled: false
   when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: Perform RHEL-specific tasks
-  include_tasks: "rhel_tasks.yml"
+  ansible.builtin.include_tasks: "rhel_tasks.yml"
   when: ansible_os_family == 'RedHat'
 
 - name: Perform Debian-specific tasks
-  include_tasks: "debian_tasks.yml"
+  ansible.builtin.include_tasks: "debian_tasks.yml"
   when: ansible_os_family == 'Debian'
 
 - name: "fail2ban: create /etc/fail2ban/jail.d/sshd.local file"
-  template:
+  ansible.builtin.template:
     src: fail2ban_sshd.local
     dest: /etc/fail2ban/jail.d/sshd.local
     owner: root
     group: root
-    mode: 0600
+    mode: "0600"
   notify: fail2ban_restart
 
 - name: "fail2ban: create directory - /var/run/fail2ban"
-  file:
+  ansible.builtin.file:
     path: /var/run/fail2ban
     state: directory
     seuser: "{{ 'system_u' if ansible_os_family == 'RedHat' }}"
     setype: "{{ 'fail2ban_var_run_t' if ansible_os_family == 'RedHat' }}"
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
   notify: fail2ban_restart
 
 - name: "fail2ban: start and enable"
-  service:
+  ansible.builtin.service:
     name: fail2ban
     state: started
-    enabled: yes
+    enabled: true
 
 - name: "enable acpid (needed for graceful shutdown/restart)"
-  service:
+  ansible.builtin.service:
     name: acpid
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Perform CIS hardening
-  include_tasks: "cis.yml"
-
+  ansible.builtin.include_tasks: "cis.yml"
 - name: "Improve network performance sysctls"
-  copy:
+  ansible.builtin.copy:
     src: sysctl_90-netperf.conf
     dest: /etc/sysctl.d/90-netperf.conf
     owner: root
     group: root
-    mode: 0600
+    mode: "0600"
   notify: sysctl_reload
 
 - name: "Detect network issues faster"
-  copy:
+  ansible.builtin.copy:
     src: sysctl_95-keepalive.conf
     dest: /etc/sysctl.d/95-keepalive.conf
     owner: root
     group: root
-    mode: 0600
+    mode: "0600"
   notify: sysctl_reload
 
 - name: "Enable io_uring on RHEL-based systems"
-  copy:
+  ansible.builtin.copy:
     src: sysctl_95-io_uring.conf
     dest: /etc/sysctl.d/sysctl_95-io_uring.conf
     owner: root
     group: root
-    mode: 0600
+    mode: "0600"
   notify: sysctl_reload
 
 - name: "Set cpu performance governor"
-  include_tasks: "cpu_governor.yml"
+  ansible.builtin.include_tasks: "cpu_governor.yml"
   when: ansible_facts['virtualization_role'] != 'guest' and ansible_facts['chassis_vendor'] != 'QEMU'
 
 - name: "Configure SysFS Disk Settings at boot"
-  template:
+  ansible.builtin.template:
     src: sysfs.disk.conf.j2
     dest: /etc/sysfs.d/disk.conf
     mode: "644"
@@ -382,7 +380,7 @@
   when: ansible_os_family == 'Debian'
 
 - name: "Ensure SysFS is started at boot"
-  service:
+  ansible.builtin.service:
     name: sysfs
     enabled: true
     state: started
@@ -390,7 +388,7 @@
 
 - name: "Make sure no periodic drop caches is enabled"
   when: not drop_caches
-  file:
+  ansible.builtin.file:
     path: /etc/cron.hourly/drop-caches
     state: absent
 
@@ -398,20 +396,20 @@
   when: drop_caches
   block:
     - name: "Copy script to drop caches"
-      copy:
+      ansible.builtin.copy:
         src: drop-caches.sh
         dest: /usr/local/bin/drop-caches.sh
         owner: root
-        mode: 0755
+        mode: "0755"
     - name: "Run drop caches hourly"
-      file:
+      ansible.builtin.file:
         # NOTE: cannot have '.' in cron.hourly filename
         path: /etc/cron.hourly/drop-caches
         src: /usr/local/bin/drop-caches.sh
         state: link
 
 - name: "RedHat: check if server needs rebooting"
-  command: "needs-restarting -r"
+  ansible.builtin.command: "needs-restarting -r"
   notify: reboot
   register: reboot_req
   changed_when: (reboot_req.rc == 1)
@@ -419,14 +417,15 @@
   when: ansible_os_family == 'RedHat' and not skip_updates|default(false)
 
 - name: "Debian: check if server needs rebooting"
-  stat: path=/var/run/reboot-required
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
   notify: reboot
   register: reboot_req
   changed_when: reboot_req.stat.exists
   when: ansible_os_family == 'Debian' and not skip_updates|default(false)
 
 - name: "Debian: check if any installed services or sessions may need to be restarted"
-  shell: "needrestart -r l -b | grep -e NEEDRESTART-SVC -e NEEDRESTART-SESS"
+  ansible.builtin.shell: "needrestart -r l -b | grep -e NEEDRESTART-SVC -e NEEDRESTART-SESS"
   register: reboot_req
   failed_when: false
   changed_when: reboot_req.rc == 0
@@ -438,4 +437,3 @@
 # a node reboot after package updates might invalidate such bootstrapping.
 - name: "Flush handlers"
   ansible.builtin.meta: flush_handlers
-
