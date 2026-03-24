@@ -73,7 +73,7 @@
   notify: update_grub
 
 # Automatic updates
-- name: "Automatic updates: {{ 'yes' if base_autoupdate else 'no' }}"
+- name: "Automatic updates: {{ 'yes' if os_autoupdate else 'no' }}"
   ansible.builtin.dnf:
     name: dnf-automatic
     state: "{{ 'installed' if os_autoupdate else 'absent' }}"
