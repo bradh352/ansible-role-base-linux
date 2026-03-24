@@ -318,8 +318,8 @@
   ansible.builtin.file:
     path: /var/run/fail2ban
     state: directory
-    seuser: "{{ 'system_u' if ansible_os_family == 'RedHat' }}"
-    setype: "{{ 'fail2ban_var_run_t' if ansible_os_family == 'RedHat' }}"
+    seuser: "{{ 'system_u' if ansible_os_family == 'RedHat' else omit }}"
+    setype: "{{ 'fail2ban_var_run_t' if ansible_os_family == 'RedHat' else omit }}"
     owner: root
     group: root
     mode: "0755"

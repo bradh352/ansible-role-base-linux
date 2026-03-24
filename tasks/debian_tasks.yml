@@ -25,7 +25,7 @@
     direction: incoming
 
 # Automatic updates
-- name: "Automatic updates: {{ 'yes' if base_autoupdate else 'no' }}"
+- name: "Automatic updates: {{ 'yes' if os_autoupdate else 'no' }}"
   ansible.builtin.apt:
     name: unattended-upgrades
     state: "{{ 'present' if os_autoupdate else 'absent' }}"
