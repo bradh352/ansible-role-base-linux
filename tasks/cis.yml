@@ -25,13 +25,13 @@
       - "vsftpd"
       - "cockpit-ws"
     state: absent
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'
 
 - name: "CIS: Debian: remove unneeded or insecure software packages"
   ansible.builtin.apt:
     name: ["setroubleshoot", "mcstrans", "telnet-server", "telnet", "rsh-server", "rsh", "ypbind", "ypserv", "tftp", "talk", "talk-server", "vsftpd"]
     state: absent
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: "CIS: disable unneeded services (likely these aren't installed)"
   ansible.builtin.service:
@@ -52,7 +52,7 @@
 
 - name: "CIS: set owner, group and perms on grub.cfg"
   ansible.builtin.file:
-    path: "{{ '/boot/grub2/grub.cfg' if ansible_os_family == 'RedHat' else '/boot/grub/grub.cfg' }}"
+    path: "{{ '/boot/grub2/grub.cfg' if ansible_facts['os_family'] == 'RedHat' else '/boot/grub/grub.cfg' }}"
     owner: root
     group: root
     mode: "0600"
@@ -74,7 +74,7 @@
     regexp: '^CLASS="(--unrestricted |)(.*)"'
     state: present
     line: 'CLASS="--unrestricted \2"'
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
   notify: update_grub
 
 - name: "CIS: update /etc/default/grub to enable audit logging at boot"
@@ -155,7 +155,7 @@
     enabled: true
   with_items:
     - auditd
-    - "{{ 'crond' if ansible_os_family == 'RedHat' else 'cron' }}"
+    - "{{ 'crond' if ansible_facts['os_family'] == 'RedHat' else 'cron' }}"
 
 - name: "CIS: set owner,group and perms for cron and anacron files, and blank them out"
   ansible.builtin.copy:
@@ -187,7 +187,7 @@
 
 - name: "CIS: set user umask in bashrc"
   ansible.builtin.replace:
-    path: "{{ '/etc/bashrc' if ansible_os_family == 'RedHat' else '/etc/bash.bashrc' }}"
+    path: "{{ '/etc/bashrc' if ansible_facts['os_family'] == 'RedHat' else '/etc/bash.bashrc' }}"
     regexp: "umask [0-9]+"
     replace: "umask 077"
 
@@ -223,4 +223,4 @@
   ansible.posix.selinux:
     policy: targeted
     state: enforcing
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'

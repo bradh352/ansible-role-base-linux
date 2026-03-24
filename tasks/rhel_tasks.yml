@@ -60,7 +60,7 @@
     name: kdump
     state: stopped
     enabled: false
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'
 
 - name: "kdump: disable crashkernel"
   ansible.builtin.lineinfile:
@@ -69,7 +69,7 @@
     regexp: "^GRUB_CMDLINE_LINUX=(.*)crashkernel=[a-z]+(.*)"
     line: "GRUB_CMDLINE_LINUX=\\1crashkernel=no\\2"
     state: present
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'
   notify: update_grub
 
 # Automatic updates

@@ -11,7 +11,7 @@
     line: "{{ ip }} {{ inventory_hostname }} {{ short_host }}"
     regexp: '^({{ "127.0.1.1" | replace(".", "\.") }}|{{ ip | replace(".", "\.") }}|.*{{ inventory_hostname | replace(".", "\.") }})'
   vars:
-    ip: "{{ (ansible_default_ipv4.address | default(ansible_all_ipv4_addresses[0])) if host_use_default_ip else '127.0.1.1' }}"
+    ip: "{{ (ansible_facts['default_ipv4'].address | default(ansible_facts['all_ipv4_addresses'][0])) if host_use_default_ip else '127.0.1.1' }}"
   notify: set_hostname
 
 - name: configure extra hostnames
@@ -50,7 +50,7 @@
     name: "{{ superuser }}"
     create_home: true
     shell: "/bin/bash"
-    groups: "{{ ['wheel', 'users', 'adm', 'lp'] if ansible_os_family == 'RedHat' else ['adm', 'sudo', 'plugdev', 'cdrom', 'dip'] }}"
+    groups: "{{ ['wheel', 'users', 'adm', 'lp'] if ansible_facts['os_family'] == 'RedHat' else ['adm', 'sudo', 'plugdev', 'cdrom', 'dip'] }}"
     state: present
     append: true
     password: "{{ superuser_password | password_hash('sha512') }}"
@@ -119,11 +119,11 @@
 
 - name: Install packages
   ansible.builtin.include_tasks: "rhel_packages.yml"
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'
 
 - name: Debian packages
   ansible.builtin.include_tasks: "debian_packages.yml"
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: check if systemd-timesyncd is installed
   ansible.builtin.command: systemctl status systemd-timesyncd
@@ -141,7 +141,7 @@
 - name: install chrony.conf
   ansible.builtin.template:
     src: chrony.conf
-    dest: "{{ '/etc/chrony.conf' if ansible_os_family == 'RedHat' else '/etc/chrony/chrony.conf' }}"
+    dest: "{{ '/etc/chrony.conf' if ansible_facts['os_family'] == 'RedHat' else '/etc/chrony/chrony.conf' }}"
     owner: root
     group: root
     mode: "0644"
@@ -283,27 +283,27 @@
 - name: configure exim
   ansible.builtin.template:
     src: exim.conf
-    dest: "{{ '/etc/exim/exim.conf' if ansible_os_family == 'RedHat' else '/etc/exim4/exim4.conf' }}"
+    dest: "{{ '/etc/exim/exim.conf' if ansible_facts['os_family'] == 'RedHat' else '/etc/exim4/exim4.conf' }}"
     backup: true
     owner: root
     group: root
     mode: "0644"
-  when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
+  when: ansible_facts['os_family'] != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: make sure exim doesn't start, we don't need the daemon
   ansible.builtin.service:
-    name: "{{ 'exim' if ansible_os_family == 'RedHat' else 'exim4' }}"
+    name: "{{ 'exim' if ansible_facts['os_family'] == 'RedHat' else 'exim4' }}"
     state: stopped
     enabled: false
-  when: ansible_os_family != "RedHat" # RedHat 10 doesn't have exim?
+  when: ansible_facts['os_family'] != "RedHat" # RedHat 10 doesn't have exim?
 
 - name: Perform RHEL-specific tasks
   ansible.builtin.include_tasks: "rhel_tasks.yml"
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts['os_family'] == 'RedHat'
 
 - name: Perform Debian-specific tasks
   ansible.builtin.include_tasks: "debian_tasks.yml"
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: "fail2ban: create /etc/fail2ban/jail.d/sshd.local file"
   ansible.builtin.template:
@@ -318,8 +318,8 @@
   ansible.builtin.file:
     path: /var/run/fail2ban
     state: directory
-    seuser: "{{ 'system_u' if ansible_os_family == 'RedHat' else omit }}"
-    setype: "{{ 'fail2ban_var_run_t' if ansible_os_family == 'RedHat' else omit }}"
+    seuser: "{{ 'system_u' if ansible_facts['os_family'] == 'RedHat' else omit }}"
+    setype: "{{ 'fail2ban_var_run_t' if ansible_facts['os_family'] == 'RedHat' else omit }}"
     owner: root
     group: root
     mode: "0755"
@@ -377,14 +377,14 @@
     mode: "644"
     owner: root
   notify: sysfs_restart
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: "Ensure SysFS is started at boot"
   ansible.builtin.service:
     name: sysfs
     enabled: true
     state: started
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: "Make sure no periodic drop caches is enabled"
   when: not drop_caches
@@ -414,7 +414,7 @@
   register: reboot_req
   changed_when: (reboot_req.rc == 1)
   failed_when: (reboot_req.rc > 1)
-  when: ansible_os_family == 'RedHat' and not skip_updates|default(false)
+  when: ansible_facts['os_family'] == 'RedHat' and not skip_updates|default(false)
 
 - name: "Debian: check if server needs rebooting"
   ansible.builtin.stat:
@@ -422,14 +422,14 @@
   notify: reboot
   register: reboot_req
   changed_when: reboot_req.stat.exists
-  when: ansible_os_family == 'Debian' and not skip_updates|default(false)
+  when: ansible_facts['os_family'] == 'Debian' and not skip_updates|default(false)
 
 - name: "Debian: check if any installed services or sessions may need to be restarted"
   ansible.builtin.shell: "needrestart -r l -b | grep -e NEEDRESTART-SVC -e NEEDRESTART-SESS"
   register: reboot_req
   failed_when: false
   changed_when: reboot_req.rc == 0
-  when: ansible_os_family == 'Debian' and not skip_updates|default(false)
+  when: ansible_facts['os_family'] == 'Debian' and not skip_updates|default(false)
   notify: reboot
 
 # We want to flush any handlers for the base role before executing any other

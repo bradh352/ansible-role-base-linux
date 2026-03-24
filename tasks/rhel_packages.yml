@@ -10,7 +10,7 @@
     - "rocky-addons.repo"
     - "rocky-devel.repo"
     - "rocky-extras.repo"
-  when: ansible_distribution == "Rocky"
+  when: ansible_facts['distribution'] == "Rocky"
 
 - name: Install EPEL repo files
   ansible.builtin.template:

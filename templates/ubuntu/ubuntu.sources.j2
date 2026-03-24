@@ -5,7 +5,7 @@ URIs: http://us.archive.ubuntu.com/ubuntu/
 {% else %}
 URIs: {{ mirror_ubuntu }}
 {% endif %}
-Suites: {{ ansible_distribution_release }} {{ ansible_distribution_release }}-updates {{ ansible_distribution_release }}-backports
+Suites: {{ ansible_facts['distribution_release'] }} {{ ansible_facts['distribution_release'] }}-updates {{ ansible_facts['distribution_release'] }}-backports
 Components: main universe restricted multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
@@ -15,7 +15,7 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 ## this should mirror your choices in the previous section.
 Types: deb
 URIs: http://security.ubuntu.com/ubuntu
-Suites: {{ ansible_distribution_release }}-security
+Suites: {{ ansible_facts['distribution_release'] }}-security
 Components: main universe restricted multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 {% endif %}
