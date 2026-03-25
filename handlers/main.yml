@@ -26,7 +26,7 @@
 
 - name: sshd_restart
   ansible.builtin.service:
-    name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"
+    name: "{{ 'sshd' if ansible_facts['os_family'] == 'RedHat' else 'ssh' }}"
     state: restarted
 
 - name: firewall_reload
@@ -50,7 +50,7 @@
 - name: sysctl_reload
   ansible.builtin.command: sysctl -p
 - name: update_grub
-  ansible.builtin.command: "{{ 'grub2-mkconfig -o /boot/grub2/grub.cfg' if ansible_os_family == 'RedHat' else 'grub-mkconfig -o /boot/grub/grub.cfg' }}"
+  ansible.builtin.command: "{{ 'grub2-mkconfig -o /boot/grub2/grub.cfg' if ansible_facts['os_family'] == 'RedHat' else 'grub-mkconfig -o /boot/grub/grub.cfg' }}"
 - name: reboot
   ansible.builtin.reboot:
     msg: "rebooting now"
