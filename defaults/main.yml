@@ -4,6 +4,9 @@ timezone: UTC
 ssh_port: 22
 ntp_pools: ["0.us.pool.ntp.org", "1.us.pool.ntp.org", "2.us.pool.ntp.org", "3.us.pool.ntp.org"]
 os_autoupdate: false
+# When false, this role will not start/enable/configure firewalld (for hosts
+# that manage their own firewall, e.g. a hand-maintained nftables ruleset).
+base_linux_manage_firewalld: true
 ssh_password_auth: false
 ssh_kbdinteractive_auth: false
 disable_hwe: false

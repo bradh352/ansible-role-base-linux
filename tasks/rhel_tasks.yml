@@ -1,47 +1,53 @@
 ---
-- name: ensure firewalld is started and enabled
-  ansible.builtin.service:
-    name: firewalld
-    state: started
-    enabled: true
-
-- name: "FirewallD: Log Denied"
-  ansible.builtin.lineinfile:
-    path: /etc/firewalld/firewalld.conf
-    regexp: "^LogDenied=.*"
-    line: "LogDenied=all"
-  notify: firewall_reload
-
-- name: "open up port {{ ssh_port|default(22) }} for SSHd alternative port"
-  ansible.posix.firewalld:
-    immediate: true
-    permanent: true
-    port: "{{ ssh_port | default(22) }}/tcp"
-    state: enabled
-
-- name: "open up NTP if we have peers"
-  ansible.posix.firewalld:
-    immediate: true
-    permanent: true
-    port: "123/udp"
-    state: enabled
-  when: ntp_peers|default([])|length > 0
-
 - name: "SELinux allow SSHd to use port {{ ssh_port|default(22) }}"
   community.general.seport:
     proto: tcp
     ports: "{{ ssh_port | default(22) }}"
     setype: ssh_port_t
 
-- name: remove firewalld services no longer desired
-  ansible.posix.firewalld:
-    service: "{{ item }}"
-    immediate: true
-    permanent: true
-    state: disabled
-  with_items:
-    - cockpit
-    - sshd
+# Hosts that manage their own firewall (e.g. a hand-maintained nftables
+# ruleset) set base_linux_manage_firewalld: false so this role leaves
+# firewalld alone entirely.
+- name: "Manage firewalld"
+  when: base_linux_manage_firewalld | default(true)
+  block:
+    - name: ensure firewalld is started and enabled
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: "FirewallD: Log Denied"
+      ansible.builtin.lineinfile:
+        path: /etc/firewalld/firewalld.conf
+        regexp: "^LogDenied=.*"
+        line: "LogDenied=all"
+      notify: firewall_reload
+
+    - name: "open up port {{ ssh_port|default(22) }} for SSHd alternative port"
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        port: "{{ ssh_port | default(22) }}/tcp"
+        state: enabled
+
+    - name: "open up NTP if we have peers"
+      ansible.posix.firewalld:
+        immediate: true
+        permanent: true
+        port: "123/udp"
+        state: enabled
+      when: ntp_peers|default([])|length > 0
+
+    - name: remove firewalld services no longer desired
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: disabled
+      with_items:
+        - cockpit
+        - sshd
 
 - name: check if mta is already set to sendmail
   ansible.builtin.shell: alternatives --display mta | grep link | grep /usr/sbin/sendmail.exim
