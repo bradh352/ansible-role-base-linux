@@ -16,6 +16,13 @@ lsi_reset_workaround: true
 base_additional_hosts: []
 drop_caches: false
 nfs_disable_directory_delegations: true
+# auditd disk space handling. Set base_linux_auditd_action_mail_acct to have
+# auditd email that address when the audit log partition runs low; unset, the
+# warning goes to syslog. When space runs out, rotate (dropping the oldest
+# logs) and log disk errors rather than suspending auditing.
+# base_linux_auditd_action_mail_acct: ops@example.com
+base_linux_auditd_admin_space_left_action: rotate
+base_linux_auditd_disk_error_action: syslog
 # setuid/setgid commands audited on execution (CIS "privileged" rules). A rule
 # is only emitted when the command's directory exists on the host.
 base_linux_audit_privileged_cmds:

@@ -41,11 +41,14 @@
     name: fail2ban
     state: restarted
 
+# auditd's unit sets RefuseManualStop=yes on RedHat and derivatives, so
+# systemctl can't restart it; the service command runs the initscripts legacy
+# action, which stops it with auditctl and starts it again. The service module
+# doesn't do this even with use: service (it still picks the systemd backend,
+# reports changed and leaves auditd running). Elsewhere systemctl works.
 - name: auditd_reload
-  ansible.builtin.service:
-    name: auditd
-    state: restarted
-    use: service
+  ansible.builtin.command: "{{ 'service auditd restart' if ansible_facts['os_family'] == 'RedHat' else 'systemctl restart auditd' }}"  # noqa: command-instead-of-module
+  changed_when: true
 
 - name: sysctl_reload
   ansible.builtin.command: sysctl -p

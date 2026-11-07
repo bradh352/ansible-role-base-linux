@@ -112,13 +112,13 @@
     regexp: "^UMASK .*"
 
 - name: "CIS: add auditd.conf configuration"
-  ansible.builtin.copy:
-    src: auditd.conf
+  ansible.builtin.template:
+    src: auditd.conf.j2
     dest: /etc/audit/auditd.conf
     owner: root
     group: root
     mode: "0600"
-  register: auditd_conf
+  notify: auditd_reload
 
 # The kernel rejects a path rule with ENOENT when the path's directory doesn't
 # exist (e.g. /usr/libexec/utempter without libutempter), and augenrules stops
@@ -131,7 +131,7 @@
   loop: "{{ base_linux_audit_privileged_cmds | map('dirname') | unique | list }}"
   register: audit_privileged_dirs
 
-- name: "CIS: add configuration to /etc/audit.d/rules.d/audit.rules"
+- name: "CIS: add configuration to /etc/audit/rules.d/audit.rules"
   ansible.builtin.template:
     src: audit.rules.j2
     dest: /etc/audit/rules.d/audit.rules
@@ -140,24 +140,50 @@
     mode: "0600"
   register: audit_rules
 
-- name: "CIS: add configuration to /etc/audit.d/rules.d/pcidss.rules"
-  ansible.builtin.copy:
-    src: audit_pcidss.rules
-    dest: /etc/audit/rules.d/pcidss.rules
+# The PCI-DSS rules used to ship as a separate pcidss.rules; they are now part
+# of audit.rules, so remove the old file or augenrules would load both.
+- name: "CIS: remove the old /etc/audit/rules.d/pcidss.rules"
+  ansible.builtin.file:
+    path: /etc/audit/rules.d/pcidss.rules
+    state: absent
   register: pcidss_rules
+
+# augenrules stops at the first rule auditctl rejects. A marker records that
+# the rules on disk haven't been loaded yet, so a failed load is retried on the
+# next run even though the rules files no longer show as changed.
+- name: "CIS: mark audit rules as needing a reload"
+  ansible.builtin.file:
+    path: /etc/audit/.base_linux_reload_pending
+    state: touch
+    mode: "0600"
+  when: audit_rules.changed or pcidss_rules.changed
+
+- name: "CIS: check for an audit rules reload still pending"
+  ansible.builtin.stat:
+    path: /etc/audit/.base_linux_reload_pending
+    get_checksum: false
+  register: audit_reload_pending
 
 - name: "CIS: run augenrules when audit rules have changed"
   ansible.builtin.command: "augenrules --load"
-  when: audit_rules.changed or pcidss_rules.changed
+  when: audit_reload_pending.stat.exists or audit_rules.changed or pcidss_rules.changed
   notify: auditd_reload
 
+- name: "CIS: clear the pending audit rules reload"
+  ansible.builtin.file:
+    path: /etc/audit/.base_linux_reload_pending
+    state: absent
+
+# audit 3.0 dropped the builtin syslog plugin; audisp-syslog ships in
+# audispd-plugins on RedHat and derivatives and in auditd on Debian.
 - name: "CIS: enable auditd to write to syslog for log collection"
-  ansible.builtin.copy:
-    src: audit_syslog.conf
+  ansible.builtin.template:
+    src: audit_syslog.conf.j2
     dest: "/etc/audit/plugins.d/syslog.conf"
     owner: root
     group: root
     mode: "0640"
+  notify: auditd_reload
 
 - name: "CIS: enable critical daemons"
   ansible.builtin.service:

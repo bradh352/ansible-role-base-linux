@@ -88,6 +88,7 @@
       - "firewalld"
       - "setools-console"
       - "audit"
+      - "audispd-plugins"
     state: installed
 
 # EL10 split rules.d, augenrules and auditctl out of audit into audit-rules,
@@ -97,3 +98,10 @@
     name: "audit-rules"
     state: installed
   when: ansible_facts['distribution_major_version'] | int >= 10
+
+# The auditd_reload handler restarts auditd with the service command, which
+# EL9 and later split out into initscripts-service (initscripts on EL8).
+- name: install the service command for restarting auditd
+  ansible.builtin.dnf:
+    name: "{{ 'initscripts' if ansible_facts['distribution_major_version'] | int < 9 else 'initscripts-service' }}"
+    state: installed

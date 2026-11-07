@@ -1,25 +1,41 @@
-# This file contains the auditctl rules that are loaded
-# whenever the audit daemon is started via the initscripts.
-# The rules are simply the parameters that would be passed
-# to auditctl.
+# Audit rules for base_linux hosts, loaded by augenrules from
+# /etc/audit/rules.d. Each group notes the CIS benchmark and PCI-DSS
+# requirements it covers.
+#
+# Order matters: on the exit filter the first matching rule wins and sets the
+# key, so specific watches (identity, logins, ...) come before the broad
+# directory rules at the end (sys_object, logs).
 
 # First rule - delete all
 -D
 
-# Increase the buffers to survive stress events.
-# Make this bigger for busy systems
--b 320
+# Kernel backlog. When it fills, the process making the syscall blocks for up
+# to backlog_wait_time waiting for auditd, so keep it large enough to absorb
+# bursts (package upgrades, bulk changes under /etc or /usr).
+-b 8192
 
-# Feel free to add below this line. See auditctl man page
--a always,exit -F arch=b64 -F subj_type=ntpd_t -S adjtimex -S settimeofday -k time-change
--a always,exit -F arch=b32 -F subj_type=ntpd_t -S adjtimex -S settimeofday -S stime -k time-change
+# Exclude excessive, irrelevant records.
+-a exclude,always -F msgtype=CWD
+
+## Time changes -- CIS 4.1.3; PCI 10.4.2
+# clock_settime (date -s, timedatectl, chronyd stepping the clock) is audited
+# for every process. adjtimex is also how the time daemon slews the clock and
+# how monitoring agents read its state (node_exporter's timex collector on
+# every scrape), so it and the legacy calls are only audited for login
+# sessions; sudo keeps the user's auid.
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -F auid>=1000 -F auid!=4294967295 -k time-change
+-a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -F auid>=1000 -F auid!=4294967295 -k time-change
 -a always,exit -F arch=b64 -S clock_settime -k time-change
 -a always,exit -F arch=b32 -S clock_settime -k time-change
+
+## User/group identity files -- CIS 4.1.4; PCI 10.2.5
 -w /etc/group -p wa -k identity
 -w /etc/passwd -p wa -k identity
 -w /etc/gshadow -p wa -k identity
 -w /etc/shadow -p wa -k identity
--w /etc/security/opasswd -p wa -k indentity
+-w /etc/security/opasswd -p wa -k identity
+
+## Network environment -- CIS 4.1.5
 -a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale
 -a always,exit -F arch=b32 -S sethostname -S setdomainname -k system-locale
 -w /etc/issue -p wa -k system-locale
@@ -27,30 +43,116 @@
 -w /etc/hosts -p wa -k system-locale
 {% if ansible_facts['os_family'] == 'RedHat' %}
 -w /etc/sysconfig/network -p wa -k system-locale
+
+## Mandatory access control policy -- CIS 4.1.6
 -w /etc/selinux -p wa -k MAC-policy
 {% endif %}
+
+## Login and session records -- CIS 4.1.7, 4.1.8; PCI 10.2.1
 -w /var/log/faillog -p wa -k logins
 -w /var/log/lastlog -p wa -k logins
 -w /var/log/tallylog -p wa -k logins
 -w /var/run/utmp -p wa -k session
 -w /var/run/wtmp -p wa -k session
--a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
--a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -F auid>=1000 -F auid!=4294967295 -k perm_mod
+
+## Failed file access attempts -- CIS 4.1.11; PCI 10.2.4
+# Only failures are logged, so this stays cheap.
 -a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
 -a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=4294967295 -k access
 -a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
 -a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=4294967295 -k access
+
+## Privileged commands run by users -- CIS 4.1.12; PCI 10.2.2
 {% set audit_dirs = audit_privileged_dirs.results | selectattr('stat.exists') | map(attribute='item') | list %}
 {% for cmd in base_linux_audit_privileged_cmds if cmd | dirname in audit_dirs %}
 -a always,exit -F path={{ cmd }} -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged
 {% endfor %}
-#-a always,exit -F path=/usr/lib64/dbus-1/dbus-daemon-launch-helper -F perm=x -F auid>=1000 -F auid!=4294967295 -k privileged
+
+## Mounts by users -- CIS 4.1.13
 -a always,exit -F arch=b64 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts
 -a always,exit -F arch=b32 -S mount -F auid>=1000 -F auid!=4294967295 -k mounts
--a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete
--a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -F auid>=1000 -F auid!=4294967295 -k delete
 
+## Commands run as root -- PCI 10.2.2
+# Only root commands run directly by a person are wanted; daemons and cron
+# would make this far too verbose. On RedHat and derivatives those are
+# excluded by SELinux domain. Elsewhere there are no SELinux domains, and a
+# subj_type field makes the kernel skip the rule entirely (it loads, but never
+# matches), so limit it to login sessions instead: sudo keeps the user's auid.
+{% if ansible_facts['os_family'] == 'RedHat' %}
+{% set root_cmd_filter = '-F subj_type!=keepalived_t -F subj_type!=initrc_t -F subj_type!=system_cronjob_t' %}
+{% else %}
+{% set root_cmd_filter = '-F auid>=1000 -F auid!=4294967295' %}
+{% endif %}
+-a exit,always -F arch=b64 -F euid=0 {{ root_cmd_filter }} -S execve -k root-commands
+-a exit,always -F arch=b32 -F euid=0 {{ root_cmd_filter }} -S execve -k root-commands
+
+## Changes to audit and system logs -- CIS 4.1.9; PCI 10.2.3, 10.5
+# Only modifications matter (someone covering their tracks), not reads, and
+# not syslog writing its own files. Outside SELinux a subj_type field makes the
+# rule never match, so rsyslog is excluded by executable there.
+{% set syslog_exclude = '-F subj_type!=syslogd_t' if ansible_facts['os_family'] == 'RedHat' else '-F exe!=/usr/sbin/rsyslogd' %}
+-a always,exit -S all -F dir=/var/log/audit -F perm=wa {{ syslog_exclude }} -k audit-logs
+-a always,exit -S all -F dir=/var/log -F perm=wa {{ syslog_exclude }} -k logs
+
+## setuid/setgid bits set by users -- CIS 4.1.10 (narrowed, see below)
+# Permission changes are otherwise only audited under the system paths below;
+# setting a setuid/setgid bit is worth recording wherever it happens.
+# (fchmodat2 is covered at the end of the file.)
+-a always,exit -F arch=b64 -S chmod -S fchmod -F a1&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+-a always,exit -F arch=b32 -S chmod -S fchmod -F a1&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+-a always,exit -F arch=b64 -S fchmodat -F a2&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+-a always,exit -F arch=b32 -S fchmodat -F a2&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+
+## Creation, deletion and modification of system-level objects
+## -- CIS 4.1.10, 4.1.14 (narrowed); PCI 10.2.7
+# These are recursive directory rules: -p w matches the kernel's write class
+# (including unlink, unlinkat, rename*, mkdir, rmdir, link, symlink) and -p a
+# the attribute class (chmod*, chown*, *xattr) for every file under the tree,
+# for every user.
+#
+# The CIS benchmark's own delete and perm_mod rules audit those syscalls on
+# every path for every login session, which logs each file a user removes or
+# chmods (caches, home directories, build trees) and can stall bulk deletes
+# behind auditd. They are deliberately not used: deletes and permission
+# changes are audited here, for system paths only, and CIS scanners that look
+# for the literal benchmark rules will flag 4.1.10 and 4.1.14.
+#
+# On merged-usr systems /bin, /sbin, /lib and /lib64 are symlinks; tree rules
+# do not follow them, and the /usr rules cover those files.
+# /var/lib is left out: too verbose.
+-a exit,always -F dir=/etc -F perm=wa -k sys_object
+-w /bin -p wa -k sys_object
+-w /sbin -p wa -k sys_object
+-w /usr/bin -p wa -k sys_object
+-w /usr/sbin -p wa -k sys_object
+-w /lib -p wa -k sys_object
+-w /usr/lib -p wa -k sys_object
+-w /usr/libexec -p wa -k sys_object
+-w /lib64 -p wa -k sys_object
+-w /usr/lib64 -p wa -k sys_object
+
+## fchmodat2 -- CIS 4.1.10; PCI 10.2.7
+# glibc 2.39+ uses fchmodat2 for fchmodat with AT_SYMLINK_NOFOLLOW, and the
+# kernel's attribute class doesn't include it (as of 6.17), so neither -p a
+# nor the rules above see it. It is given by number because older auditctl
+# builds don't know the name; it is 452 on every architecture, and on kernels
+# without it the rules load and never match. These come after everything else
+# so a rejected rule can't take earlier ones down with it.
+{% set audit_fchmodat2 = 452 %}
+-a always,exit -F arch=b64 -S {{ audit_fchmodat2 }} -F a2&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+-a always,exit -F arch=b32 -S {{ audit_fchmodat2 }} -F a2&0xc00 -F auid>=1000 -F auid!=4294967295 -k perm_mod_setid
+{% for dir in ['/etc', '/usr/bin', '/usr/sbin', '/usr/lib', '/usr/libexec', '/usr/lib64'] %}
+-a always,exit -F arch=b64 -S {{ audit_fchmodat2 }} -F dir={{ dir }} -k sys_object
+-a always,exit -F arch=b32 -S {{ audit_fchmodat2 }} -F dir={{ dir }} -k sys_object
+{% endfor %}
+{% if ansible_facts['kernel'].split('-')[0] is version('5.16', '>=') %}
+
+## Filesystem changes made through io_uring -- CIS 4.1.10, 4.1.14; PCI 10.2.7
+# io_uring operations skip the syscall exit filter, so none of the rules above
+# see an IORING_OP_UNLINKAT and friends. This is the plain form of the rule,
+# with no fields beyond the operations, so it covers every path and user;
+# these operations are rare (qemu's io_uring block backend only reads and
+# writes). The io_uring filter needs kernel 5.16 or later. Kept last: if
+# auditctl rejects it, every rule above is already loaded.
+-a always,io_uring -S unlinkat -S renameat -S mkdirat -S symlinkat -S linkat -k io_uring_fs
+{% endif %}

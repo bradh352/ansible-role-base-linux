@@ -61,11 +61,15 @@
   ansible.builtin.script: get_pw_hash.sh "{{ superuser }}"
   register: pwhash
   changed_when: false
+  check_mode: false
+  no_log: true
 
+# Keep the existing hash when the password still matches it, so this only
+# changes anything when the password itself does.
 - name: Make sure the superuser password is up to date
   ansible.builtin.user:
     name: "{{ superuser }}"
-    password: "{{ superuser_password | password_hash('sha512', pwhash.stdout | trim) }}"
+    password: "{{ superuser_password | password_hash_keep(pwhash.stdout | trim) }}"
     update_password: always
   register: superuser_pwchanged
 
